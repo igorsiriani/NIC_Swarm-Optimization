@@ -4,7 +4,7 @@ from matplotlib.animation import FuncAnimation
 
 
 class PSO:
-
+    # implementação do PSO
     def __init__(self, n_particles, x_interval, y_interval, w, c1, c2, n_iter):
         self.X = None
         self.V = None
@@ -33,10 +33,9 @@ class PSO:
     def evaluate(self, x, y):
         return (1 - x) ** 2 + 100 * (y - x ** 2) ** 2
 
+    # função que faz a iteração
     def update(self):
-        "Function to do one iteration of particle swarm optimization"
-        # global 
-        # Update params
+        # atualização de parâmetros
         r1, r2 = np.random.rand(2)
         self.V = self.w * self.V + self.c1 * r1 * (self.pbest - self.X) + self.c2 * r2 * (self.gbest.reshape(-1, 1) - self.X)
         self.X = self.X + self.V
@@ -46,12 +45,11 @@ class PSO:
         self.gbest = self.pbest[:, self.pbest_obj.argmin()]
         self.gbest_obj = self.pbest_obj.min()
 
+    # adiciona update ao plot da animação
     def animate(self, i):
-        "Steps of PSO: algorithm update and show in plot"
         title = 'Iteration {:02d}'.format(i)
-        # Update params
         self.update()
-        # Set picture
+        # gera figura
         self.ax.set_title(title)
         self.pbest_plot.set_offsets(self.pbest.T)
         self.p_plot.set_offsets(self.X.T)
@@ -79,7 +77,7 @@ class PSO:
         self.gbest = self.pbest[:, self.pbest_obj.argmin()]
         self.gbest_obj = self.pbest_obj.min()
     
-        # Set up base figure: The contour map
+        # inicializa figura
         self.fig.set_tight_layout(True)
         img = self.ax.imshow(z, extent=[self.x_interval[0], self.x_interval[1], self.y_interval[0], self.y_interval[1]], origin='lower', cmap='viridis', alpha=0.5)
         self.fig.colorbar(img, ax=self.ax)
@@ -92,9 +90,10 @@ class PSO:
         self.gbest_plot = plt.scatter([self.gbest[0]], [self.gbest[1]], marker='*', s=100, color='black', alpha=0.4)
         self.ax.set_xlim([self.x_interval[0], self.x_interval[1]])
         self.ax.set_ylim([self.y_interval[0], self.y_interval[1]])
-    
+
+        # gera animação
         anim = FuncAnimation(self.fig, self.animate, frames=list(range(1, self.n_iter)), interval=500, blit=False, repeat=True)
-        anim.save("PSO.gif", dpi=120, writer="imagemagick")
+        anim.save("/src/PSO.gif", dpi=120, writer="imagemagick")
     
         return self.gbest, self.gbest_obj
 
@@ -115,11 +114,11 @@ def main():
         result, res_obj = swarm.pso()
         print("PSO found best solution at f({})={}".format(result, res_obj))
         result_list.append(result)
-    #
-    # print('Solução máxima: ', max(result_list))
-    # print('Solução mínima: ', min(result_list))
-    # print('Solução média: ', np.mean(result_list))
-    # print('Solução padrão: ', np.std(result_list))
+
+    print('Solução máxima: ', max(result_list))
+    print('Solução mínima: ', min(result_list))
+    print('Solução média: ', np.mean(result_list))
+    print('Solução padrão: ', np.std(result_list))
 
 
 if __name__ == '__main__':
