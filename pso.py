@@ -6,6 +6,7 @@ from matplotlib.animation import FuncAnimation
 class PSO:
     # implementação do PSO
     def __init__(self, n_particles, x_interval, y_interval, w, c1, c2, n_iter):
+        self.anim = None
         self.X = None
         self.V = None
         self.gbest = None
@@ -28,6 +29,7 @@ class PSO:
         self.c1 = c1
         self.c2 = c2
         self.n_iter = n_iter
+        self.it_current = 0
 
     # função de avaliação
     def evaluate(self, x, y):
@@ -35,6 +37,7 @@ class PSO:
 
     # função que faz a iteração
     def update(self):
+        self.it_current += 1
         # atualização de parâmetros
         r1, r2 = np.random.rand(2)
         self.V = self.w * self.V + self.c1 * r1 * (self.pbest - self.X) + self.c2 * r2 * (self.gbest.reshape(-1, 1) - self.X)
@@ -47,15 +50,18 @@ class PSO:
 
     # adiciona update ao plot da animação
     def animate(self, i):
-        title = 'Iteration {:02d}'.format(i)
-        self.update()
-        # gera figura
-        self.ax.set_title(title)
-        self.pbest_plot.set_offsets(self.pbest.T)
-        self.p_plot.set_offsets(self.X.T)
-        self.p_arrow.set_offsets(self.X.T)
-        self.p_arrow.set_UVC(self.V[0], self.V[1])
-        self.gbest_plot.set_offsets(self.gbest.reshape(1, -1))
+        if (self.it_current + 1) <= self.n_iter:
+            title = 'Iteration {:02d}'.format(i)
+            self.update()
+            # gera figura
+            self.ax.set_title(title)
+            self.pbest_plot.set_offsets(self.pbest.T)
+            self.p_plot.set_offsets(self.X.T)
+            self.p_arrow.set_offsets(self.X.T)
+            self.p_arrow.set_UVC(self.V[0], self.V[1])
+            self.gbest_plot.set_offsets(self.gbest.reshape(1, -1))
+        else:
+            self.anim.event_source.stop()
 
     def pso(self):
         # criação de uma população inicial de indivíduos
@@ -67,7 +73,7 @@ class PSO:
         y_min = y.ravel()[z.argmin()]
     
         # cria particulas
-        np.random.seed(100)
+        # np.random.seed(100)
         self.X = np.random.rand(2, self.n_particles) * 5
         self.V = np.random.randn(2, self.n_particles) * 0.1
     
@@ -92,28 +98,28 @@ class PSO:
         self.ax.set_ylim([self.y_interval[0], self.y_interval[1]])
 
         # gera animação
-        anim = FuncAnimation(self.fig, self.animate, frames=list(range(1, self.n_iter)), interval=500, blit=False, repeat=True)
-        anim.save("/src/PSO.gif", dpi=120, writer="imagemagick")
+        self.anim = FuncAnimation(self.fig, self.animate, frames=list(range(1, self.n_iter)), interval=200, blit=False, repeat=True)
+        self.anim.save("./gif/PSO.gif", dpi=120, writer="imagemagick")
     
         return self.gbest, self.gbest_obj
 
 
 def main():
     # inicia variáveis
-    c1 = 0.1
-    c2 = 0.1
+    c1 = 2.0
+    c2 = 2.0
     w = 0.8
-    n_particles = 20
+    n_particles = 50
     x_interval = [-5, 5]
     y_interval = [-5, 5]
-    n_iter = 10
+    n_iter = 100
 
     result_list = []
     for i in range(0, 100):
         swarm = PSO(n_particles, x_interval, y_interval, w, c1, c2, n_iter)
         result, res_obj = swarm.pso()
         print("PSO found best solution at f({})={}".format(result, res_obj))
-        result_list.append(result)
+        result_list.append(res_obj)
 
     print('Solução máxima: ', max(result_list))
     print('Solução mínima: ', min(result_list))

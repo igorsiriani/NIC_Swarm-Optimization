@@ -10,6 +10,7 @@ class ACO:
     # implementação do ACO
     def __init__(self, distance, n_ants=1, n_elitists=1, n_iterations=10, alpha=1, beta=5, decay=0.5):
         self.nodes_df = None
+        self.anim = None
         self.pbest_plot = None
         self.best_path = None
         self.short_path = None
@@ -21,6 +22,8 @@ class ACO:
         self.alpha = alpha
         self.beta = beta
         self.decay = decay
+        self.it_current = 0
+        self.it_best = 0
 
         self.pheromones = np.ones(self.D.shape) / len(self.D)
         self.fig, self.ax = plt.subplots()
@@ -101,17 +104,20 @@ class ACO:
 
     # adiciona update ao plot da animação
     def animate(self, i):
-        title = 'Iteration {:02d}'.format(i)
-        self.run()
+        if (self.it_current + 1) <= self.n_iterations:
+            title = 'Iteration {:02d}'.format(i)
+            self.run()
 
-        nodes = pd.DataFrame(self.best_path[0], columns=['order', 'next'])
-        nodes_df2 = self.nodes_df.reindex(nodes['order'])
-        nodes_df2 = pd.concat([nodes_df2, nodes_df2.head(1)], ignore_index=True)
+            nodes = pd.DataFrame(self.best_path[0], columns=['order', 'next'])
+            nodes_df2 = self.nodes_df.reindex(nodes['order'])
+            nodes_df2 = pd.concat([nodes_df2, nodes_df2.head(1)], ignore_index=True)
 
-        # atualiza imagem
-        self.ax.set_title(title)
-        self.pbest_plot.set_xdata(nodes_df2['latitude'])
-        self.pbest_plot.set_ydata(nodes_df2['longitude'])
+            # atualiza imagem
+            self.ax.set_title(title)
+            self.pbest_plot.set_xdata(nodes_df2['latitude'])
+            self.pbest_plot.set_ydata(nodes_df2['longitude'])
+        else:
+            self.anim.event_source.stop()
 
     def aco(self, nodes):
         # inicializa variáveis
@@ -123,14 +129,15 @@ class ACO:
         self.fig.set_tight_layout(True)
         self.pbest_plot, = self.ax.plot(nodes['latitude'], nodes['longitude'], marker='o', color='black', alpha=0.5)
 
-        anim = FuncAnimation(self.fig, self.animate, frames=list(range(1, self.n_iterations)), interval=50, blit=False,
+        self.anim = FuncAnimation(self.fig, self.animate, frames=list(range(1, self.n_iterations)), interval=50, blit=False,
                              repeat=True)
-        anim.save("src/ACO.gif", dpi=120, writer="imagemagick")
+        self.anim.save("gif/ACO.gif", dpi=120, writer="imagemagick")
 
-        return self.best_path[1], self.best_path[0]
+        return self.best_path[1], self.best_path[0], self.it_best
 
     # função que faz a iteração
     def run(self):
+        self.it_current += 1
         # gera os caminhos
         paths = self.generate_all_paths()
         # espalha feromônio
@@ -140,6 +147,7 @@ class ACO:
         # avalia o menor custo
         if self.short_path[1] < self.best_path[1]:
             self.best_path = self.short_path
+            self.it_best = self.it_current
 
         # decaimento do feromônio
         self.pheromones *= self.decay
@@ -157,14 +165,30 @@ def main():
     iterations = 200
     alpha = 1
     beta = 2
-    decay = 1
+    decay = 0.8
 
-    # instancia o ACO
-    a = ACO(D, n_ants=ants, n_elitists=elitists, n_iterations=iterations, alpha=alpha, beta=beta, decay=decay)
+    result_list = []
+    it_list = []
+    for i in range(0, 100):
+        # instancia o ACO
+        a = ACO(D, n_ants=ants, n_elitists=elitists, n_iterations=iterations, alpha=alpha, beta=beta, decay=decay)
 
-    nodes_df = pd.DataFrame(list(map(np.ravel, nodes)), columns=['latitude', 'longitude'])
-    cost, path = a.aco(nodes_df)
-    print(f'Best path: {path} | Cost: {cost}\n')
+        nodes_df = pd.DataFrame(list(map(np.ravel, nodes)), columns=['latitude', 'longitude'])
+        cost, path, it_best = a.aco(nodes_df)
+        print(f'Best iteration: {it_best} | Cost: {cost}\n')
+        result_list.append(cost)
+        it_list.append(it_best)
+        a = None
+
+    print('Custo mínimo: ', min(result_list))
+    print('Custo máximo: ', max(result_list))
+    print('Custo médio: ', np.mean(result_list))
+    print('Custo padrão: ', np.std(result_list))
+
+    print('Iteração mínima: ', min(it_list))
+    print('Iteração máxima: ', max(it_list))
+    print('Iteração média: ', np.mean(it_list))
+    print('Iteração padrão: ', np.std(it_list))
 
 
 if __name__ == "__main__":
